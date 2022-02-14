@@ -41,8 +41,9 @@ class bat:
     character = '|'
     ulimit = 0
     dlimit = 0
-    def __init__(self, x, y, u, d, char='|'):
+    def __init__(self, x, y, l, u, d, char='|'):
         self.position = vector2d(x, y)
+        self.length = l
         self.ulimit = u
         self.dlimit = d
         self.character = char
