@@ -1,6 +1,6 @@
 from baseDataTypes import vector2d
 from rich.console import Console
-import time
+import time, math
 
 class collider:
     x = 0
@@ -21,20 +21,44 @@ class ball:
         self.position = vector2d(x, y)
         self.velocity = vector2d(vx, vy)
         self.character = char
-    def update(self, dt, colliders=[]):
+    def update(self, dt,bat1,bat2,colliders=[]):
         self.position.x += self.velocity.x * dt
         self.position.y += self.velocity.y * dt
         for c in colliders:
-            if self.position.x + self.velocity.x * dt > c.x and self.position.x + self.velocity.x * dt < c.x + c.w:
-                if self.position.y + self.velocity.y * dt > c.y and self.position.y + self.velocity.y * dt < c.y + c.h:
-                    self.velocity.x *= -1
-                    self.position.x += self.velocity.x * dt
-                    self.position.y += self.velocity.y * dt
-            if self.position.x + self.velocity.x * dt > c.x and self.position.x + self.velocity.x * dt < c.x + c.w:
-                if self.position.y + self.velocity.y * dt > c.y and self.position.y + self.velocity.y * dt < c.y + c.h:
-                    self.velocity.y *= -1
-                    self.position.x += self.velocity.x * dt
-                    self.position.y += self.velocity.y * dt
+            if int(self.position.x) in range(c.x, c.x + c.w):
+                if int(self.position.y) in range(c.y, c.y + c.h):
+                    modifier = 0.2
+                    if abs(self.velocity.x) > 1:
+                        modifier=0
+                    if c.h > c.w:
+                        self.velocity.y *= -1-modifier
+                    elif c.w > c.h:
+                        self.velocity.x *= -1-modifier
+                    else:
+                        self.velocity.x *= -1-modifier
+                        self.velocity.y *= -1-modifier
+                    self.velocity.x *= -1-modifier
+                    self.velocity.y *= -1-modifier
+                    self.position.x += self.velocity.x * dt*2
+                    self.position.y += self.velocity.y * dt*2
+        if self.position.x <= bat1.position.x:
+            if int(self.position.y) in range(bat1.position.y, bat1.position.y - bat1.length,-1):
+                relativeIntersectY = (bat1.position.y-int(bat1.length/2))+self.position.y
+                normalizedRelativeIntersectionY = (relativeIntersectY/(bat1.length/2))
+                bounceAngle = normalizedRelativeIntersectionY * 70
+                self.velocity.x = math.cos(bounceAngle)
+                self.velocity.y = -math.sin(bounceAngle)
+                self.position.x += self.velocity.x * dt*2
+                self.position.y += self.velocity.y * dt*2
+        if self.position.x >= bat2.position.x:
+            if int(self.position.y) in range(bat2.position.y, bat2.position.y + bat2.length,-1):
+                relativeIntersectY = (bat2.position.y-int(bat2.length/2))+self.position.y
+                normalizedRelativeIntersectionY = (relativeIntersectY/(bat2.length/2))
+                bounceAngle = normalizedRelativeIntersectionY * 70
+                self.velocity.x = math.cos(bounceAngle)
+                self.velocity.y = -math.sin(bounceAngle)
+                self.position.x += self.velocity.x * dt*2
+                self.position.y += self.velocity.y * dt*2
 
 class bat:
     position = vector2d(0, 0)

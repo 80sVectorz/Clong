@@ -13,10 +13,7 @@ class window:
     grid = []
     def __init__(self,w,h):
         self.w,self.h=w,h
-        self.console = Console(
-            width=w,
-            height=h,
-        )
+
         """
         Intro animation
         """
@@ -55,42 +52,58 @@ class window:
             print(u"\u2800"*w+"\n",end="\r")
     def clear(self):
         print('\u001b[H',end="")
-        for i in range(self.h):
-            print(u"\u2800"*self.w+"\n",end="\r")
-    def drawBat(self,bat):
-        print(f"\u001b[{bat.position.y};{bat.position.x}H",end="")
-        for i in range(bat.length):    
-            print(f"{bat.character}\r",end="")
+        for i in range(self.h+1):
+            print(u"\u2800"*self.w,end="\r")
             print(u"\u001b[1B",end="")
+    def drawBat(self,bat):
+        print(f"\u001b[{self.h-bat.position.y};{bat.position.x}H",end="")
+        for i in range(bat.length):    
+            print(f"\u001b[{self.h-bat.position.y+i};{bat.position.x}H",end="")
+            print(f"{bat.character}\r",end="")
+            #print(u"\u001b[1B",end="")
+        print('\u001b[H',end="")
+    def drawBall(self,ball):
+        print(f"\u001b[{int(self.h-ball.position.y)};{int(ball.position.x)}H",end="")
+        print(f"\u001b[1B",end="")
+        print(f"{ball.character}\r",end="")
+        print('\u001b[H',end="")
+    def debug_draw_colliders(self,colliders):
+        for c in colliders:
+            for i in range(c.h):
+                for j in range(c.w):
+                    print(f"\u001b[{self.h-c.y-i};{c.x+j}H",end="")
+                    print(f"\u2592\r",end="")
+            print('\u001b[H',end="")
+        print('\u001b[H',end="")
 
-ball = gameObjects.ball(50, 25, 1, 1)
-p1Bat = gameObjects.bat(1, 0,4, 50, 0)
-p2Bat = gameObjects.bat(99, 0,4, 50, 0)
+ball = gameObjects.ball(40, 20, -1, -1)
+p1Bat = gameObjects.bat(4, 1,8, 50, 0)
+p2Bat = gameObjects.bat(76, 1,8, 50, 0)
 
 static_colliders=[
-    gameObjects.collider(1, 1, 100, 1),
-    gameObjects.collider(1, 1, 1, 100),
-    gameObjects.collider(99, 1, 100, 1),
-    gameObjects.collider(1, 99, 1, 100),
+    gameObjects.collider(1, 1, 79, 2),
+    gameObjects.collider(1, 1, 2, 79),
+    gameObjects.collider(1, 39, 79, 2),
+    gameObjects.collider(79, 1, 2, 79),
         ]
 bat_colliders=[
     gameObjects.collider(p1Bat.position.x, p1Bat.position.y, 1, p1Bat.length),
     gameObjects.collider(p2Bat.position.x, p2Bat.position.y, 1, p2Bat.length),
     ]
 
-win = window(100,50)
+win = window(80,40)
 
 def on_press(key):
     global p1Bat,p2Bat
     try:
         if key.char == 'w':
-            p1Bat.position.y-=1
-        elif key.char == 's':
             p1Bat.position.y+=1
+        elif key.char == 's':
+            p1Bat.position.y-=1
         elif key.char == 'i':
-            p2Bat.position.y-=1
-        elif key.char == 'k':
             p2Bat.position.y+=1
+        elif key.char == 'k':
+            p2Bat.position.y-=1
     except:
         pass
 
@@ -105,20 +118,17 @@ listener.start()
 Main loop
 """
 releaseBuffer = 0
+curTime = time.time()
 while True:
-    time.sleep(0.5)
+    curTime,dt = time.time(),time.time()-curTime
+    bat_colliders[0].y = p1Bat.position.y
+    bat_colliders[1].y = p2Bat.position.y
     win.clear()
     win.drawBat(p1Bat)
     win.drawBat(p2Bat)
-    with Events() as events:
-        for event in events:
-            if event.key=='w' and releaseBuffer%2==0:
-                p1Bat.position.y-=1
-            elif event.key=='s' and releaseBuffer%2==0:
-                p1Bat.position.y+=1
-            elif event.key=='i' and releaseBuffer%2==0:
-                p2Bat.position.y-=1
-            elif event.key=='k' and releaseBuffer%2==0:
-                p2Bat.position.y+=1
-            releaseBuffer+=1
+    win.drawBall(ball)
+    win.debug_draw_colliders([static_colliders[0],static_colliders[2]])
+    ball.update(0.2,p1Bat,p2Bat,colliders=static_colliders+bat_colliders)
+    time.sleep(0.01)
+
 
