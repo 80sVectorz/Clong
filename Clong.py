@@ -1,3 +1,4 @@
+from math import e
 from baseDataTypes import *
 import gameObjects
 from rich.console import Console
@@ -11,6 +12,23 @@ from pynput.keyboard import Key, Listener, Events
 class window:
     w,h = 0,0
     grid = []
+    windowChangeBuffer = []
+    
+    def inBuffer(self,pos,char=None):
+        indexes = []
+        if char == None:
+            I = 0
+            for i in self.windowChangeBuffer:
+                if i[0] == pos:
+                    indexes.append(I)
+                I+=1
+        else:
+            I = 0
+            for i in self.windowChangeBuffer:
+                if i[1] == char:
+                    indexes.append(I)
+                I+=1
+        return indexes
     def __init__(self,w,h):
         self.w,self.h=w,h
 
@@ -48,43 +66,74 @@ class window:
                 break
             time.sleep(0.1)
         #Fill window with empty space:
-        for i in range(h):
+        for i in range(h+1):
             print(u"\u2800"*w+"\n",end="\r")
     def clear(self):
         print('\u001b[H',end="")
-        for i in range(self.h+1):
-            print(u"\u2800"*self.w,end="\r")
-            print(u"\u001b[1B",end="")
+        print('\u001b[J',end="")
+        # for i in range(self.h+1):
+        #     print(u"\u2800"*(self.w),end="\r")
+        #     print(u"\u001b[1B",end="")
     def drawBat(self,bat):
         print(f"\u001b[{self.h-bat.position.y};{bat.position.x}H",end="")
         for i in range(bat.length):    
             print(f"\u001b[{self.h-bat.position.y+i};{bat.position.x}H",end="")
             print(f"{bat.character}\r",end="")
+            self.windowChangeBuffer.append([[int(self.h-bat.position.y+i),int(bat.position.x)],bat.character])
             #print(u"\u001b[1B",end="")
         print('\u001b[H',end="")
+
     def drawBall(self,ball):
-        print(f"\u001b[{int(self.h-ball.position.y)};{int(ball.position.x)}H",end="")
-        print(f"\u001b[1B",end="")
-        print(f"{ball.character}\r",end="")
-        print('\u001b[H',end="")
+        if [[int(self.h-ball.position.y),int(ball.position.x)],ball.character] in self.windowChangeBuffer:
+            return
+        else:
+            self.clearBall(ball)
+            self.windowChangeBuffer.append([[int(self.h-ball.position.y),int(ball.position.x)],ball.character])
+            print(f"\u001b[{int(self.h-ball.position.y)};{int(ball.position.x)}H",end="")
+            print(f"\u001b[1B",end="")
+            print(f"{ball.character}\r",end="")
+            print('\u001b[H',end="")
+    def clearBall(self,ball):
+        indexes = self.inBuffer([0,0],ball.character)
+        if len(indexes) != 0:
+            for i in indexes:
+                print(f"\u001b[{self.windowChangeBuffer[i][0][0]};{self.windowChangeBuffer[i][0][1]}H",end="")
+                print(f"\u001b[1B",end="")
+                print(u" \r",end="")
+                print('\u001b[H',end="")
+            #remove all the indexes from the buffer:
+            for i in indexes:
+                self.windowChangeBuffer[i] = None
+            #remove all the None values from the buffer:
+            self.windowChangeBuffer = [i for i in self.windowChangeBuffer if i != None]
+    def clearBat(self,bat):
+        print(f"\u001b[{self.h-bat.position.y};{bat.position.x}H",end="")
+        for i in range(bat.dlimit-bat.length,bat.ulimit-2):    
+            print(f"\u001b[{i};{bat.position.x}H",end="")
+            print(u" \r",end="")
+            #print(u"\u001b[1B",end="")
     def debug_draw_colliders(self,colliders):
         for c in colliders:
-            for i in range(c.h):
-                for j in range(c.w):
+            for i in range(min(c.h,self.h)):
+                for j in range(min(c.w,self.w)):
+                    if [[self.h-c.y-i,c.x+j],'\u2592'] in self.windowChangeBuffer:
+                        continue
+                    else:
+                        self.windowChangeBuffer.append([[self.h-c.y-i,c.x+j],'\u2592'])
                     print(f"\u001b[{self.h-c.y-i};{c.x+j}H",end="")
                     print(f"\u2592\r",end="")
             print('\u001b[H',end="")
         print('\u001b[H',end="")
 
 ball = gameObjects.ball(40, 20, -1, -1)
-p1Bat = gameObjects.bat(4, 1,8, 50, 0)
-p2Bat = gameObjects.bat(76, 1,8, 50, 0)
+p1Bat = gameObjects.bat(8, 11,8, 39, 9)
+p2Bat = gameObjects.bat(76, 11,8, 39, 9)
 
 static_colliders=[
-    gameObjects.collider(1, 1, 79, 2),
-    gameObjects.collider(1, 1, 2, 79),
-    gameObjects.collider(1, 39, 79, 2),
-    gameObjects.collider(79, 1, 2, 79),
+    gameObjects.collider(0, 0, 90, 3),
+    gameObjects.collider(0, 0, 5, 100),
+    gameObjects.collider(0, 40, 90, 5),
+    gameObjects.collider(80, 0, 5, 100),
         ]
 bat_colliders=[
     gameObjects.collider(p1Bat.position.x, p1Bat.position.y, 1, p1Bat.length),
@@ -97,13 +146,21 @@ def on_press(key):
     global p1Bat,p2Bat
     try:
         if key.char == 'w':
-            p1Bat.position.y+=1
+            if p1Bat.position.y+1 < p1Bat.ulimit:
+                win.clearBat(p1Bat)
+                p1Bat.position.y+=1
         elif key.char == 's':
-            p1Bat.position.y-=1
+            if p1Bat.position.y-1 > p1Bat.dlimit:
+                win.clearBat(p1Bat)
+                p1Bat.position.y-=1
         elif key.char == 'i':
-            p2Bat.position.y+=1
+            if p2Bat.position.y+1 < p2Bat.ulimit:
+                win.clearBat(p2Bat)
+                p2Bat.position.y+=1
         elif key.char == 'k':
-            p2Bat.position.y-=1
+            if p2Bat.position.y+1 > p2Bat.dlimit:
+                win.clearBat(p2Bat)
+                p2Bat.position.y-=1 
     except:
         pass
 
@@ -123,12 +180,14 @@ while True:
     curTime,dt = time.time(),time.time()-curTime
     bat_colliders[0].y = p1Bat.position.y
     bat_colliders[1].y = p2Bat.position.y
-    win.clear()
+    time.sleep(0.01)
+    #win.clear()
+    win.clearBall(ball)
     win.drawBat(p1Bat)
     win.drawBat(p2Bat)
     win.drawBall(ball)
-    win.debug_draw_colliders([static_colliders[0],static_colliders[2]])
-    ball.update(0.2,p1Bat,p2Bat,colliders=static_colliders+bat_colliders)
-    time.sleep(0.01)
+    win.debug_draw_colliders(static_colliders)#[static_colliders[0],static_colliders[2]])
+    ball.update(dt*10,p1Bat,p2Bat,colliders=static_colliders+bat_colliders)
+    
 
 
