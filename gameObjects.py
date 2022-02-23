@@ -22,7 +22,7 @@ class ball:
         self.ballSpeed = 0.1
         self.velocity = vector2d(vx+self.ballSpeed, vy+self.ballSpeed)
         self.character = char
-    def update(self, dt,bat1,bat2,colliders=[]):
+    def update(self, dt,paddle1,paddle2,colliders=[],p1goal=None,p2goal=None):
         self.position.x += self.velocity.x * dt*(1+self.ballSpeed)
         self.position.y += self.velocity.y * dt
         for c in colliders:
@@ -43,27 +43,35 @@ class ball:
                     self.velocity.y *= -1
                     self.position.x += self.velocity.x * dt*2
                     self.position.y += self.velocity.y * dt*2
+                    if c == p1goal:
+                        return 2
+                    elif c == p2goal:
+                        return 1
                     
-        if self.position.x <= bat1.position.x:
-            if int(self.position.y) in range(bat1.position.y, bat1.position.y - bat1.length,-1):
-                relativeIntersectY = (bat1.position.y-int(bat1.length/2))-self.position.y
-                normalizedRelativeIntersectionY = (relativeIntersectY/(bat1.length/2))
-                bounceAngle = normalizedRelativeIntersectionY * 70
-                self.velocity.x = math.cos(bounceAngle)*(-1)
-                self.velocity.y = -math.sin(bounceAngle)*(-1)
-                self.position.x += self.velocity.x * dt*6
-                self.position.y += self.velocity.y * dt*6
-        if self.position.x >= bat2.position.x:
-            if int(self.position.y) in range(bat2.position.y, bat2.position.y - bat2.length,-1):
-                relativeIntersectY = (bat2.position.y-int(bat2.length/2))-self.position.y
-                normalizedRelativeIntersectionY = (relativeIntersectY/(bat2.length/2))
-                bounceAngle = normalizedRelativeIntersectionY * 70
+        if int(self.position.x) in range(int(paddle1.position.x)-3,int(paddle1.position.x)):
+            if int(self.position.y) in range(paddle1.position.y - paddle1.length+1,paddle1.position.y):
+                relativeIntersectY = (paddle1.position.y-paddle1.length/2)-self.position.y
+                normalizedRelativeIntersectionY = (relativeIntersectY/(paddle1.length/2))
+                bounceAngle = normalizedRelativeIntersectionY * 40
                 self.velocity.x = math.cos(bounceAngle)*(-1-self.ballSpeed)
-                self.velocity.y = -math.sin(bounceAngle)*(-1-self.ballSpeed)
-                self.position.x += self.velocity.x * dt*6
-                self.position.y += self.velocity.y * dt*6
+                self.velocity.y = -abs(math.sin(bounceAngle))*(-1-self.ballSpeed)
+                self.position.x += self.velocity.x * dt*3
+                self.position.y += self.velocity.y * dt*3
+                if self.position.x <= paddle1.position.x:
+                    self.position.x = paddle1.position.x+1
+        if int(self.position.x) in range(int(paddle2.position.x),int(paddle2.position.x)+3):
+            if int(self.position.y) in range(paddle2.position.y - paddle2.length+1,paddle2.position.y):
+                relativeIntersectY = (paddle2.position.y-paddle2.length/2)-self.position.y
+                normalizedRelativeIntersectionY = (relativeIntersectY/(paddle2.length/2))
+                bounceAngle = normalizedRelativeIntersectionY * 40
+                self.velocity.x = math.cos(bounceAngle)*(1-self.ballSpeed)
+                self.velocity.y = -abs(math.sin(bounceAngle))*(-1-self.ballSpeed)
+                self.position.x += self.velocity.x * dt*3
+                self.position.y += self.velocity.y * dt*3
+                if self.position.x >= paddle2.position.x:
+                    self.position.x = paddle2.position.x-1
 
-class bat:
+class paddle:
     position = vector2d(0, 0)
     character = '|'
     ulimit = 0

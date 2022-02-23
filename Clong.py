@@ -74,26 +74,26 @@ class window:
         # for i in range(self.h+1):
         #     print(u"\u2800"*(self.w),end="\r")
         #     print(u"\u001b[1B",end="")
-    def drawBat(self,bat):
-        print(f"\u001b[{self.h-bat.position.y};{bat.position.x}H",end="")
-        for i in range(bat.length):    
-            print(f"\u001b[{self.h-bat.position.y+i};{bat.position.x}H",end="")
-            print(f"{bat.character}\r",end="")
-            self.windowChangeBuffer.append([[int(self.h-bat.position.y+i),int(bat.position.x)],bat.character])
+    def draw_paddle(self,paddle):
+        print(f"\u001b[{self.h-paddle.position.y};{paddle.position.x}H",end="")
+        for i in range(paddle.length):
+            print(f"\u001b[{self.h-paddle.position.y+i};{paddle.position.x}H",end="")
+            print(f"{paddle.character}\r",end="")
+            self.windowChangeBuffer.append([[int(self.h-paddle.position.y+i),int(paddle.position.x)],paddle.character])
             #print(u"\u001b[1B",end="")
         print('\u001b[H',end="")
 
-    def drawBall(self,ball):
+    def draw_ball(self,ball):
         if [[int(self.h-ball.position.y),int(ball.position.x)],ball.character] in self.windowChangeBuffer:
             return
         else:
-            self.clearBall(ball)
+            self.clear_ball(ball)
             self.windowChangeBuffer.append([[int(self.h-ball.position.y),int(ball.position.x)],ball.character])
             print(f"\u001b[{int(self.h-ball.position.y)};{int(ball.position.x)}H",end="")
             print(f"\u001b[1B",end="")
             print(f"{ball.character}\r",end="")
             print('\u001b[H',end="")
-    def clearBall(self,ball):
+    def clear_ball(self,ball):
         indexes = self.inBuffer([0,0],ball.character)
         if len(indexes) != 0:
             for i in indexes:
@@ -106,9 +106,9 @@ class window:
                 self.windowChangeBuffer[i] = None
             #remove all the None values from the buffer:
             self.windowChangeBuffer = [i for i in self.windowChangeBuffer if i != None]
-    def clearBat(self,bat):
-        for i in range(bat.dlimit-bat.length+1,bat.ulimit-1):    
-            print(f"\u001b[{i};{bat.position.x}H",end="")
+    def clear_paddle(self,paddle):
+        for i in range(paddle.dlimit-paddle.length+1,paddle.ulimit-1):    
+            print(f"\u001b[{i};{paddle.position.x}H",end="")
             print(u" \r",end="")
             #print(u"\u001b[1B",end="")
     def debug_draw_colliders(self,colliders):
@@ -123,10 +123,14 @@ class window:
                     print(f"\u2592\r",end="")
             print('\u001b[H',end="")
         print('\u001b[H',end="")
+    def draw_scores(self,scores):
+        print(f"\u001b[;{int(self.w/2)}H",end="") 
+        print(f"{scores[0]}:{scores[1]}\r",end="")
+
 
 ball = gameObjects.ball(40, 20, -1, -1)
-p1Bat = gameObjects.bat(8, 11,8, 39, 9)
-p2Bat = gameObjects.bat(76, 11,8, 39, 9)
+p1paddle = gameObjects.paddle(8, 11,8, 39, 9)
+p2paddle = gameObjects.paddle(76, 11,8, 39, 9)
 
 static_colliders=[
     gameObjects.collider(0, 0, 90, 3),
@@ -134,32 +138,32 @@ static_colliders=[
     gameObjects.collider(0, 40, 90, 5),
     gameObjects.collider(80, 0, 5, 100),
         ]
-bat_colliders=[
-    gameObjects.collider(p1Bat.position.x, p1Bat.position.y, 1, p1Bat.length),
-    gameObjects.collider(p2Bat.position.x, p2Bat.position.y, 1, p2Bat.length),
+paddle_colliders=[
+    gameObjects.collider(p1paddle.position.x, p1paddle.position.y, 1, p1paddle.length),
+    gameObjects.collider(p2paddle.position.x, p2paddle.position.y, 1, p2paddle.length),
     ]
 
 win = window(80,40)
 
 def on_press(key):
-    global p1Bat,p2Bat
+    global p1paddle,p2paddle
     try:
         if key.char == 'w':
-            if p1Bat.position.y+1 < p1Bat.ulimit:
-                win.clearBat(p1Bat)
-                p1Bat.position.y+=1
+            if p1paddle.position.y+1 < p1paddle.ulimit:
+                win.clear_paddle(p1paddle)
+                p1paddle.position.y+=1
         elif key.char == 's':
-            if p1Bat.position.y-1 > p1Bat.dlimit:
-                win.clearBat(p1Bat)
-                p1Bat.position.y-=1
+            if p1paddle.position.y-1 > p1paddle.dlimit:
+                win.clear_paddle(p1paddle)
+                p1paddle.position.y-=1
         elif key.char == 'i':
-            if p2Bat.position.y+1 < p2Bat.ulimit:
-                win.clearBat(p2Bat)
-                p2Bat.position.y+=1
+            if p2paddle.position.y+1 < p2paddle.ulimit:
+                win.clear_paddle(p2paddle)
+                p2paddle.position.y+=1
         elif key.char == 'k':
-            if p2Bat.position.y-1 > p2Bat.dlimit:
-                win.clearBat(p2Bat)
-                p2Bat.position.y-=1 
+            if p2paddle.position.y-1 > p2paddle.dlimit:
+                win.clear_paddle(p2paddle)
+                p2paddle.position.y-=1 
     except:
         pass
 
@@ -175,18 +179,30 @@ Main loop
 """
 releaseBuffer = 0
 curTime = time.time()
+scores = [0,0]
 while True:
     curTime,dt = time.time(),time.time()-curTime
-    bat_colliders[0].y = p1Bat.position.y
-    bat_colliders[1].y = p2Bat.position.y
+    paddle_colliders[0].y = p1paddle.position.y
+    paddle_colliders[1].y = p2paddle.position.y
     time.sleep(0.01)
     #win.clear()
-    win.clearBall(ball)
-    win.drawBat(p1Bat)
-    win.drawBat(p2Bat)
-    win.drawBall(ball)
+    win.clear_ball(ball)
+    win.draw_paddle(p1paddle)
+    win.draw_paddle(p2paddle)
+    win.draw_ball(ball)
     win.debug_draw_colliders(static_colliders)#[static_colliders[0],static_colliders[2]])
-    ball.update(dt*10,p1Bat,p2Bat,colliders=static_colliders+bat_colliders)
+    scored = ball.update(dt*10,p1paddle,p2paddle,colliders=static_colliders,p1goal=static_colliders[1],p2goal=static_colliders[3])
+    if scored == 1:
+        scores[0]+=1
+        ball.ballSpeed=0.1
+        ball.position = vector2d(int(win.w/2),int(win.h/2))
+        ball.velocity = vector2d(-0.5,0)
+    elif scored == 2:
+        scores[1]+=1
+        ball.ballSpeed=0.1
+        ball.position = vector2d(int(win.w/2),int(win.h/2))
+        ball.velocity = vector2d(0.5,0)
+    win.draw_scores(scores)
     
 
 
