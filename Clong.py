@@ -107,8 +107,7 @@ class window:
             #remove all the None values from the buffer:
             self.windowChangeBuffer = [i for i in self.windowChangeBuffer if i != None]
     def clearBat(self,bat):
-        print(f"\u001b[{self.h-bat.position.y};{bat.position.x}H",end="")
-        for i in range(bat.dlimit-bat.length,bat.ulimit-2):    
+        for i in range(bat.dlimit-bat.length+1,bat.ulimit-1):    
             print(f"\u001b[{i};{bat.position.x}H",end="")
             print(u" \r",end="")
             #print(u"\u001b[1B",end="")
@@ -158,7 +157,7 @@ def on_press(key):
                 win.clearBat(p2Bat)
                 p2Bat.position.y+=1
         elif key.char == 'k':
-            if p2Bat.position.y+1 > p2Bat.dlimit:
+            if p2Bat.position.y-1 > p2Bat.dlimit:
                 win.clearBat(p2Bat)
                 p2Bat.position.y-=1 
     except:
